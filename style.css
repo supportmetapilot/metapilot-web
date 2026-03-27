@@ -55,18 +55,59 @@ footer {
 }
 
 /* Responsive */
+@media (max-width: 992px) {
+    .container {
+        padding: 0 2rem;
+    }
+}
+
 @media (max-width: 768px) {
     nav {
         padding: 10px 20px;
+        width: 95%;
     }
     nav div:last-child {
-        display: none !important;
+        gap: 15px !important;
+    }
+    nav a {
+        font-size: 0.8rem !important;
     }
     .hero h1 {
-        font-size: 3rem;
+        font-size: 2.5rem !important;
+    }
+    .hero p {
+        font-size: 1rem !important;
     }
     section {
-        padding: 60px 0;
+        padding: 60px 0 !important;
+    }
+    .features-grid {
+        flex-direction: column !important;
+    }
+    .pricing-grid {
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+    .pricing-card {
+        width: 100% !important;
+        max-width: 360px !important;
+    }
+    .mentorship-grid {
+        grid-template-columns: 1fr !important;
+        gap: 40px !important;
+    }
+    .mentorship-content {
+        padding: 30px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    nav div:last-child {
+        display: none !important; /* Hide nav on very small screens for now, or keep it minimal */
+    }
+    .hero {
+        height: auto !important;
+        padding: 120px 0 60px !important;
     }
 }
 
