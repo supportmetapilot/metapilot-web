@@ -246,4 +246,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 1000);
         });
     }
+
+    // Dynamic Live Download Links Sync from Supabase via API
+    async function syncDynamicDownloadLinks() {
+        try {
+            const res = await fetch('https://api.metapilot.in/api/config?t=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data) return;
+
+            const proUrl = data.download_url_pro || data.download_url;
+            const goUrl = data.download_url_go;
+
+            if (proUrl) {
+                document.querySelectorAll('[data-download-app="pro"], .download-pro-btn').forEach(el => {
+                    el.href = proUrl;
+                });
+            }
+            if (goUrl) {
+                document.querySelectorAll('[data-download-app="go"], .download-go-btn').forEach(el => {
+                    el.href = goUrl;
+                });
+            }
+            console.log("Synced live download links from DB:", { proUrl, goUrl });
+        } catch (e) {
+            console.warn("Could not sync download links from DB, using fallback:", e.message);
+        }
+    }
+    syncDynamicDownloadLinks();
 });
+
