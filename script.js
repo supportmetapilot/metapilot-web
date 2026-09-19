@@ -276,3 +276,138 @@ document.addEventListener('DOMContentLoaded', () => {
     syncDynamicDownloadLinks();
 });
 
+// ═══════════════════════════════════════════════════════════════
+//  ITR FILING SECTION — Tax Calculator & Inquiry Form
+//  AY 2026-27 (FY 2025-26)
+// ═══════════════════════════════════════════════════════════════
+
+function itrFmt(n) {
+  if (n === 0) return '₹0';
+  const abs = Math.abs(Math.round(n));
+  const formatted = abs.toLocaleString('en-IN');
+  return n < 0 ? `-₹${formatted}` : `₹${formatted}`;
+}
+
+function itrNewTax(totalIncome) {
+  const slabs = [[0,400000,0],[400000,800000,0.05],[800000,1200000,0.10],[1200000,1600000,0.15],[1600000,2000000,0.20],[2000000,2400000,0.25],[2400000,Infinity,0.30]];
+  let tax = 0;
+  for (const [lo, hi, rate] of slabs) {
+    if (totalIncome <= lo) break;
+    tax += (Math.min(totalIncome, hi) - lo) * rate;
+  }
+  if (totalIncome <= 1200000) tax = 0;
+  else if (totalIncome <= 1275000) tax = Math.min(tax, totalIncome - 1200000);
+  return tax;
+}
+
+function itrOldTax(totalIncome) {
+  const slabs = [[0,250000,0],[250000,500000,0.05],[500000,1000000,0.20],[1000000,Infinity,0.30]];
+  let tax = 0;
+  for (const [lo, hi, rate] of slabs) {
+    if (totalIncome <= lo) break;
+    tax += (Math.min(totalIncome, hi) - lo) * rate;
+  }
+  if (totalIncome <= 500000) tax = 0;
+  return tax;
+}
+
+function itrCalc() {
+  const g = (id) => Math.max(0, parseInt(document.getElementById(id).value) || 0);
+  const salary = g('itr-salary'), biz = g('itr-biz'), fd = g('itr-fd'), div = g('itr-div');
+  const c80 = Math.min(150000, g('itr-80c')), d80 = Math.min(100000, g('itr-80d')), tds = g('itr-tds');
+
+  // Display values
+  document.getElementById('itr-salary-disp').textContent = itrFmt(salary);
+  document.getElementById('itr-biz-disp').textContent = itrFmt(biz);
+  document.getElementById('itr-fd-disp').textContent = itrFmt(fd);
+  document.getElementById('itr-div-disp').textContent = itrFmt(div);
+  document.getElementById('itr-80c-disp').textContent = itrFmt(c80);
+  document.getElementById('itr-80d-disp').textContent = itrFmt(d80);
+  document.getElementById('itr-tds-disp').textContent = itrFmt(tds);
+
+  const other = fd + div;
+  const newStd = salary > 0 ? 75000 : 0;
+  const newGross = Math.max(0, salary - newStd) + biz + other;
+  const newSlabTax = itrNewTax(newGross);
+  const newCess = Math.round(newSlabTax * 0.04);
+  const newTotal = newSlabTax + newCess;
+  const newNet = newTotal - tds;
+
+  const oldStd = salary > 0 ? 50000 : 0;
+  const oldGross = Math.max(0, salary - oldStd) + biz + other;
+  const oldDed = c80 + d80;
+  const oldTaxable = Math.max(0, oldGross - oldDed);
+  const oldSlabTax = itrOldTax(oldTaxable);
+  const oldCess = Math.round(oldSlabTax * 0.04);
+  const oldTotal = oldSlabTax + oldCess;
+  const oldNet = oldTotal - tds;
+
+  document.getElementById('itr-new-tax').textContent = itrFmt(newTotal);
+  document.getElementById('itr-old-tax').textContent = itrFmt(oldTotal);
+
+  // Active card
+  const nc = document.getElementById('itr-new-card');
+  const oc = document.getElementById('itr-old-card');
+  nc.style.borderColor = 'var(--glass-border)';
+  oc.style.borderColor = 'var(--glass-border)';
+
+  const reco = document.getElementById('itr-reco');
+  if (newGross === 0) {
+    reco.innerHTML = 'Enter income to see results';
+  } else {
+    const savings = Math.abs(newTotal - oldTotal);
+    if (newTotal <= oldTotal) {
+      nc.style.borderColor = '#00e6a5';
+      reco.innerHTML = `✅ NEW Regime saves ${itrFmt(savings)}!`;
+    } else {
+      oc.style.borderColor = '#00e6a5';
+      reco.innerHTML = `✅ OLD Regime saves ${itrFmt(savings)}!`;
+    }
+  }
+
+  // Breakdown
+  document.getElementById('itr-breakdown').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 16px;">
+      <div style="font-weight:700;">Detail</div>
+      <div style="font-weight:700;color:#00e6a5;text-align:right;">New</div>
+      <div style="font-weight:700;color:#06b6d4;text-align:right;">Old</div>
+      <div style="grid-column:1/-1;border-top:1px solid var(--glass-border);margin:4px 0;"></div>
+      <div>Gross Total Income</div><div style="text-align:right;">${itrFmt(newGross)}</div><div style="text-align:right;">${itrFmt(oldGross)}</div>
+      <div>Standard Deduction</div><div style="text-align:right;">-${itrFmt(newStd)}</div><div style="text-align:right;">-${itrFmt(oldStd)}</div>
+      ${oldDed > 0 ? `<div>Ch. VI-A Deductions</div><div style="text-align:right;color:var(--text-dim);">N/A</div><div style="text-align:right;">-${itrFmt(oldDed)}</div>` : ''}
+      <div style="grid-column:1/-1;border-top:1px solid var(--glass-border);margin:4px 0;"></div>
+      <div style="font-weight:700;">Tax on Slab</div><div style="text-align:right;">${itrFmt(newSlabTax)}</div><div style="text-align:right;">${itrFmt(oldSlabTax)}</div>
+      <div>Cess (4%)</div><div style="text-align:right;">${itrFmt(newCess)}</div><div style="text-align:right;">${itrFmt(oldCess)}</div>
+      <div style="font-weight:700;color:#00e6a5;">Total Tax</div><div style="text-align:right;font-weight:700;color:#00e6a5;">${itrFmt(newTotal)}</div><div style="text-align:right;font-weight:700;color:#06b6d4;">${itrFmt(oldTotal)}</div>
+      <div>TDS Paid</div><div style="text-align:right;">-${itrFmt(tds)}</div><div style="text-align:right;">-${itrFmt(tds)}</div>
+      <div style="grid-column:1/-1;border-top:1px dashed var(--glass-border);margin:4px 0;"></div>
+      <div style="font-weight:700;">Net Payable / Refund</div>
+      <div style="text-align:right;font-weight:700;color:${newNet<=0?'#00e6a5':'#f43f5e'};">${newNet<=0?'🟢 Refund '+itrFmt(Math.abs(newNet)):'🔴 Pay '+itrFmt(newNet)}</div>
+      <div style="text-align:right;font-weight:700;color:${oldNet<=0?'#00e6a5':'#f43f5e'};">${oldNet<=0?'🟢 Refund '+itrFmt(Math.abs(oldNet)):'🔴 Pay '+itrFmt(oldNet)}</div>
+    </div>
+  `;
+}
+
+function itrSubmitInquiry() {
+  const name = document.getElementById('itr-client-name').value.trim();
+  const phone = document.getElementById('itr-client-phone').value.trim();
+  const plan = document.getElementById('itr-client-plan').value;
+  const status = document.getElementById('itr-submit-status');
+  if (!name || !phone) {
+    status.style.color = '#f43f5e';
+    status.textContent = '❌ Please enter your name and phone number.';
+    return;
+  }
+  if (!/^\d{10}$/.test(phone.replace(/[\s\-\+]/g,'').slice(-10))) {
+    status.style.color = '#f43f5e';
+    status.textContent = '❌ Please enter a valid 10-digit mobile number.';
+    return;
+  }
+  status.style.color = '#00e6a5';
+  status.innerHTML = `✅ Thank you <strong>${name}</strong>! We'll reach out on WhatsApp shortly.`;
+  const planNames = {salaried:'Salaried ₹499',freelancer:'Freelancer ₹999',express:'Express ₹1499'};
+  console.log('📱 ITR Lead:', {name, phone, plan: planNames[plan] || 'Not selected'});
+}
+
+// Initialize ITR calculator on load
+document.addEventListener('DOMContentLoaded', () => { if (document.getElementById('itr-salary')) itrCalc(); });
