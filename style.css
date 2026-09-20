@@ -196,13 +196,3 @@ section {
 .reveal {
     animation: fadeInUp 0.8s ease forwards;
 }
-
-/* ITR Section Responsive */
-@media (max-width: 1024px) {
-    #itr-filing > div:nth-child(2) {
-        grid-template-columns: 1fr !important;
-    }
-    #itr-filing > div:nth-child(3) {
-        grid-template-columns: 1fr !important;
-    }
-}
